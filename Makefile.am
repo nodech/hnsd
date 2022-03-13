@@ -61,10 +61,10 @@ EXTRA_DIST = README.md \
 
 bin_PROGRAMS = hnsd
 
-hnsd_SOURCES = src/cache.c  \
-               src/daemon.c \
-               src/ns.c     \
-               src/rs.c     \
+hnsd_SOURCES = src/cache.c     \
+               src/daemon.c    \
+               src/ns.c        \
+               src/rs.c        \
                src/rs_worker.c \
                src/signals.c
 
@@ -77,7 +77,13 @@ hnsd_CPPFLAGS = $(AM_CPPFLAGS)
 
 noinst_PROGRAMS = test_hnsd
 
-test_hnsd_SOURCES = test/hnsd-test.c
+test_hnsd_SOURCES = test/hnsd-test.c      \
+                    test/dns-tests.c      \
+                    test/hash-tests.c     \
+                    test/base32-tests.c   \
+                    test/req-tests.c      \
+                    test/resource-tests.c \
+                    test/utils-tests.c
 
 test_hnsd_LDFLAGS = -static
 test_hnsd_CPPFLAGS = $(AM_CPPFLAGS)
