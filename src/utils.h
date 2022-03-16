@@ -52,7 +52,10 @@ bool
 hsk_hex_decode(const char *str, uint8_t *data);
 
 void
-hsk_to_lower(uint8_t *name);
+hsk_name_to_lower(uint8_t *name);
+
+uint8_t
+hsk_to_lower(uint8_t byte);
 
 // Close and then free a libuv handle (with free()).
 // libuv specifically documents that the handle memory cannot be freed until the

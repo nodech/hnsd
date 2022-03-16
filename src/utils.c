@@ -215,7 +215,7 @@ hsk_hex_decode(const char *str, uint8_t *data) {
 }
 
 void
-hsk_to_lower(uint8_t *name) {
+hsk_name_to_lower(uint8_t *name) {
   assert(name);
 
   uint8_t off = 0;
@@ -233,6 +233,14 @@ hsk_to_lower(uint8_t *name) {
       off++;
     }
   }
+}
+
+uint8_t
+hsk_to_lower(uint8_t byte) {
+  if (byte >= 'A' && byte <= 'Z')
+    byte |= 0x20;
+
+  return byte;
 }
 
 static void

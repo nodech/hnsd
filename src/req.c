@@ -89,7 +89,7 @@ hsk_dns_req_create(
   hsk_dns_label_get(qs->name, -1, tld);
 
   // Lowercase.
-  hsk_to_lower(tld);
+  hsk_name_to_lower(tld);
 
   // Store the TLD inlcuding the leading length byte
   memcpy(req->tld, &tld, tld[0] + 1);

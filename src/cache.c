@@ -281,7 +281,7 @@ hsk_cache_key_set(hsk_cache_key_t *ck, const uint8_t *name, uint16_t type) {
     labels = 1;
 
   ck->name_len = hsk_dns_label_from(name, -labels, ck->name);
-  hsk_to_lower(ck->name);
+  hsk_name_to_lower(ck->name);
   ck->ref = ref;
   ck->type = type;
 
