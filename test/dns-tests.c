@@ -1,9 +1,118 @@
 #include <stdio.h>
 #include <dns.h>
 #include <bio.h>
+#include <string.h>
 
 #include "test-util.h"
 #include "data/record_read_vectors.h"
+
+void
+test_hsk_dns_name_cmp() {
+  printf(" test_hsk_dns_name_cmp\n");
+
+  typedef struct {
+    uint8_t nameA[HSK_DNS_MAX_NAME];
+    uint8_t nameB[HSK_DNS_MAX_NAME];
+    int cmp;
+  } test_case_t;
+
+  test_case_t tests[] = {
+    {
+      .nameA = "\x04""hnsd""\x09""handshake""\x03""org""\x00",
+      .nameB = "\x04""hnsd""\x09""handshake""\x03""org""\x00",
+      .cmp = 0
+    },
+    {
+      .nameA = "\x04""hnsd""\x09""handshake""\x03""org""\x00",
+      .nameB = "\x04""HNSD""\x09""haNDSHAke""\x03""oRg""\x00",
+      .cmp = 0
+    },
+    {
+      .nameA = "\x09""handshake""\x03""org""\x00",
+      .nameB = "\x09""handshake""\x03""org""\x00",
+      .cmp = 0
+    },
+    {
+      .nameA = "\x09""HANDSHAKE""\x03""org""\x00",
+      .nameB = "\x09""handshake""\x03""org""\x00",
+      .cmp = 0
+    },
+    {
+      .nameA = "\x09""handshake""\x03""org""\x00",
+      .nameB = "\x09""handshake""\x00",
+      .cmp = 1
+    },
+    {
+      .nameA = "\x09""hbndshake""\x00",
+      .nameB = "\x09""handshake""\x00",
+      .cmp = 1
+    },
+    {
+      .nameA = "\x09""hAndshAke""\x03""org""\x00",
+      .nameB = "\x09""handshAke""\x00",
+      .cmp = 1
+    },
+    {
+      .nameA = "\x03""orG""\x00",
+      .nameB = "\x03""Org""\x00",
+      .cmp = 0
+    },
+    {
+      .nameA = "\x03""org""\x00",
+      .nameB = "\x03""org""\x00",
+      .cmp = 0
+    },
+    {
+      .nameA = "\x04""orgs""\x00",
+      .nameB = "\x03""org""\x00",
+      .cmp = 1
+    }
+  };
+
+  int i;
+  for (i = 0; i < ARRAY_SIZE(tests); i++) {
+    test_case_t test = tests[i];
+
+    int res = hsk_dns_name_cmp(test.nameA, test.nameB);
+
+    ASSERT_INT_EQ(res, test.cmp);
+
+    // test reverse as well
+    int rev_res = hsk_dns_name_cmp(test.nameB, test.nameA);
+    ASSERT_INT_EQ(rev_res, -test.cmp);
+
+    if (test.cmp == 0)
+      ASSERT_BOOL_EQ(hsk_dns_name_equal(test.nameA, test.nameB), true);
+    else
+      ASSERT_BOOL_EQ(hsk_dns_name_equal(test.nameA, test.nameB), false);
+  }
+}
+
+
+void
+test_hsk_dns_label_count() {
+  printf("  test_hsk_dns_label_count\n");
+
+  typedef struct {
+    uint8_t name[HSK_DNS_MAX_NAME];
+    int expectedCount;
+  } test_case_t;
+
+  test_case_t tests[] = {
+    { .name = "\x04""hnsd""\x09""handshake""\x03""org""\x00", .expectedCount = 3 },
+    { .name = "\x09""handshake""\x03""org""\x00", .expectedCount = 2 },
+    { .name = "\x03""org""\x00", .expectedCount = 1 },
+    { .name = "\x00", .expectedCount = 0 },
+  };
+
+  int i;
+  for (i = 0; i < ARRAY_SIZE(tests); i++) {
+    test_case_t test = tests[i];
+
+    int count = hsk_dns_label_count(test.name);
+    ASSERT_INT_EQ(count, test.expectedCount);
+  }
+}
 
 void
 test_hsk_dns_label_split() {
@@ -69,6 +178,46 @@ test_hsk_dns_label_split() {
   ASSERT_INT_EQ(memcmp(&ret6, "\x09""handshake""\x03""org""\x00\xff", label6 + 1), 0);
   ASSERT_INT_EQ(memcmp(&ret7, "\x03""org""\x00\xff", label7 + 1), 0);
   ASSERT_INT_EQ(memcmp(&ret8, "\x03""org""\x00\xff", label8 + 1), 0);
+}
+
+void
+test_hsk_dns_is_subdomain() {
+  printf("  test_hsk_dns_is_subdomain\n");
+
+  typedef struct {
+    uint8_t parent[255];
+    uint8_t child[255];
+    bool result;
+  } hsk_dns_is_subdomain_t;
+
+  const hsk_dns_is_subdomain_t tests[] = {
+    {
+      .parent = "\x09""handshake""\x03""org""\x00",
+      .child = "\x04""hnsd""\x09""handshake""\x03""org""\x00",
+      .result = true
+    },
+    {
+      .parent = "\x04""hnsd""\x09""handshake""\x03""org""\x00",
+      .child = "\x09""handshake""\x03""org""\x00",
+      .result = false
+    },
+    {
+      .parent = "\x09""handshake""\x03""org""\x00",
+      .child = "\x09""handshake""\x03""org""\x00",
+      .result = true
+    },
+    {
+      .parent = "\x09""handshake""\x03""org""\x00",
+      .child = "\x04""test""\x03""org""\x00",
+      .result = false
+    }
+  };
+
+  for (int i = 0; i < ARRAY_SIZE(tests); i++) {
+    const hsk_dns_is_subdomain_t test = tests[i];
+    bool result = hsk_dns_is_subdomain(test.parent, test.child);
+    ASSERT_BOOL_EQ(result, test.result);
+  }
 }
 
 void
@@ -278,7 +427,10 @@ test_hsk_dns_msg_write() {
 void test_dns() {
   printf("dns.h tests...\n");
 
+  test_hsk_dns_name_cmp();
+  test_hsk_dns_label_count();
   test_hsk_dns_label_split();
+  test_hsk_dns_is_subdomain();
   test_hsk_dns_msg_read();
   test_hsk_dns_msg_write();
 }
